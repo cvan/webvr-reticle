@@ -1,14 +1,18 @@
+/* globals gcursor, THREE, Stats */
+
 (function () {
 
-var container;
-var stats;
 var camera;
-var scene;
+var container;
+var originalColors = {};
+var previousPresses = {};
 var raycaster;
 var renderer;
+var scene;
+var stats;
 
-var mouse = new THREE.Vector2();
 var INTERSECTED;
+var mouse = new THREE.Vector2();
 var radius = 100;
 var theta = 0;
 
@@ -19,6 +23,13 @@ function init() {
 
   container = document.createElement('div');
   document.body.appendChild(container);
+
+  renderer = new THREE.WebGLRenderer({antialias: true});
+  renderer.setClearColor(0xf0f0f0);
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.sortObjects = false;
+  container.appendChild(renderer.domElement);
 
   camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 10000);
 
@@ -51,13 +62,6 @@ function init() {
   }
 
   raycaster = new THREE.Raycaster();
-
-  renderer = new THREE.WebGLRenderer();
-  renderer.setClearColor(0xf0f0f0);
-  renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.sortObjects = false;
-  container.appendChild(renderer.domElement);
 
   stats = new Stats();
   stats.domElement.style.position = 'absolute';
@@ -142,8 +146,36 @@ function render() {
 
   }
 
+  if (INTERSECTED) {
+    if (!originalColors[INTERSECTED.id]) {
+      originalColors[INTERSECTED.id] = INTERSECTED.currentHex;
+    }
+
+    if (gcursor.pressed || previousPresses[INTERSECTED.id] !== gcursor.pressed) {
+      previousPresses[INTERSECTED.id] = gcursor.pressed;
+      INTERSECTED.material.emissive.setHex(gcursor.pressed ? 0xff0000 : originalColors[INTERSECTED.id]);
+    }
+  }
+
   renderer.render(scene, camera);
 
 }
+
+
+gcursor.init({
+  mouse: mouse
+});
+
+window.addEventListener('gamepadaxismove', function (e) {
+  gcursor.onGamepadAxisMove(e);
+});
+
+window.addEventListener('gamepadbuttondown', function (e) {
+  gcursor.onGamepadButtonDown(e);
+});
+
+window.addEventListener('gamepadbuttonup', function (e) {
+  gcursor.onGamepadButtonUp(e);
+});
 
 })();
